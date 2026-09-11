@@ -1,0 +1,30 @@
+                       Manning Park Resort - Daily Totals
+From Date: 2026-08-28                                   To Date: 2026-08-28
+Cost Center: Bears Den
+
+Sales                 Qnty     Gross Amount      Refunds     Discounts        Amount
+01 - FOOD              120        $2,410.00        $0.00        $10.00     $2,400.00
+02 - LIQUOR             40          $612.50        $0.00         $0.00       $612.50
+04 - BEER               35          $385.00        $0.00         $0.00       $385.00
+10- MODIFIERS            6           $12.00        $0.00         $0.00        $12.00
+12- POOL TABLE           4           $20.00        $0.00         $0.00        $20.00
+   Total:              205        $3,439.50        $0.00        $10.00     $3,429.50
+
+Taxes                 Qnty                                                   Amount
+GST                    201                                                  $171.48
+PST                    120                                                  $168.00
+ALCOHOL                 75                                                   $99.75
+   Total:                                                                   $439.23
+
+Payments              Qnty                                                   Amount
+CASH (0.00CAD)          20                                                  $310.00
+MC                      55                                                $1,402.10
+VISA                    70                                                $1,850.00
+DEBIT                   50                                                  $600.28
+Corp GC                  1                                                   $50.00
+   Total:              196                                                $4,212.38
+
+Net Cash Owing        Qnty                                                   Amount
+Cash                    20                                                  $310.00
+Non-Cash Tips           95                                                 -$343.65
+   Total On-Hand:                                                         $3,868.73

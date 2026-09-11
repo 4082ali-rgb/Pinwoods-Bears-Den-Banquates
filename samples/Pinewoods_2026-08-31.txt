@@ -1,0 +1,31 @@
+                       Manning Park Resort - Daily Totals
+From Date: 2026-08-31                                   To Date: 2026-08-31
+Cost Center: Pinewoods
+
+Sales                 Qnty     Gross Amount      Refunds     Discounts        Amount
+01 - FOOD              200        $4,100.00        $0.00        $40.00     $4,060.00
+02 - LIQUOR             50          $700.00        $0.00         $0.00       $700.00
+03 - WINE               10          $250.00        $0.00         $0.00       $250.00
+04 - BEER               60          $540.00        $0.00         $0.00       $540.00
+05 - N/A BEV            80          $320.00        $0.00         $0.00       $320.00
+10- MODIFIERS           10           $30.00        $0.00         $0.00        $30.00
+   Total:              410        $5,940.00        $0.00        $40.00     $5,900.00
+
+Taxes                 Qnty                                                   Amount
+GST                    400                                                  $295.00
+PST                     10                                                    $2.10
+ALCOHOL                120                                                  $149.00
+   Total:                                                                   $446.10
+
+Payments              Qnty                                                   Amount
+CASH (0.00CAD)          30                                                  $500.00
+MC                      80                                                $1,900.00
+VISA                   120                                                $2,800.00
+DEBIT                   90                                                $1,296.10
+RC                       5                                                  $450.00
+   Total:              325                                                $6,946.10
+
+Net Cash Owing        Qnty                                                   Amount
+Cash                    30                                                  $500.00
+Non-Cash Tips          280                                                 -$600.00
+   Total On-Hand:                                                         $6,346.10

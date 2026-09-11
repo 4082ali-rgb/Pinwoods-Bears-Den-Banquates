@@ -1,0 +1,2 @@
+pdfplumber>=0.10        # fallback text extraction when pdftotext (poppler-utils) is not installed
+pytest>=7               # tests only

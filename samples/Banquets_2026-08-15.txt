@@ -1,0 +1,31 @@
+                       Manning Park Resort - Daily Totals
+From Date: 2026-08-15                                   To Date: 2026-08-15
+Cost Center: Banquets
+
+Sales                 Qnty     Gross Amount      Refunds     Discounts        Amount
+02 - LIQUOR             30          $420.00        $0.00         $0.00       $420.00
+03 - WINE               12          $360.00        $0.00         $0.00       $360.00
+04 - BEER               25          $200.00        $0.00         $0.00       $200.00
+10- MODIFIERS            2            $8.00        $0.00         $0.00         $8.00
+11-BANQUETS              1        $5,000.00        $0.00         $0.00     $5,000.00
+   Total:               70        $5,988.00        $0.00         $0.00     $5,988.00
+
+Taxes                 Qnty                                                   Amount
+GST                     70                                                  $299.40
+PST                      3                                                  $350.56
+ALCOHOL                 67                                                   $98.00
+   Total:                                                                   $747.96
+
+Payments              Qnty                                                   Amount
+RC                       1                                                $7,948.12
+VISA                     2                                                  $100.00
+   Total:                3                                                $8,048.12
+
+Net Cash Owing        Qnty                                                   Amount
+Non-Cash Tips            2                                                  -$20.00
+Auto Gratuity            1                                               -$1,292.16
+   Total On-Hand:                                                         $6,735.96
+
+Auto Gratuity         Qnty                                                   Amount
+18%                      1                                                $1,292.16
+   Total:                1                                                $1,292.16
