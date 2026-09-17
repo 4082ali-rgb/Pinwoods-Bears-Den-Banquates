@@ -352,8 +352,8 @@ def parse_report(text: str, profile: dict) -> dict:
             if len(amts) >= 4:
                 d["nonsales_discount"] += money(amts[2])
         if d["nonsales_discount"]:
-            d["flags"].append(f"Non-Sales discount ${d['nonsales_discount']:.2f} added to "
-                              f"Sales-table discount ${d['sales_discount']:.2f}.")
+            d["flags"].append(f"Non-Sales 09-DISCOUNT ${d['nonsales_discount']:.2f} is outside the "
+                              f"sales net Amount - posted as a 3050 Discounts given debit.")
     d["discount_total"] = r2(d["sales_discount"] + d["nonsales_discount"])
 
     # --- Taxes -------------------------------------------------------------
@@ -445,8 +445,12 @@ def build_lines(d: dict, profile: dict, journal_no: str) -> list[dict]:
         tips_idx = len(raw)
         raw.append((A_TIPS, 0, d["tips_total"], generic(TIPS_PREFIX), None))
 
+    # Sales-table discounts are already inside the net Amount; Non-Sales "09- DISCOUNT"
+    # (whole-check open $ discounts) are not, so they still need a 3050 debit on net basis.
     if basis == "gross" and d["discount_total"]:
         raw.append((A_DISCOUNT, d["discount_total"], 0, generic(DISC_PREFIX), None))
+    elif basis == "net" and d["nonsales_discount"]:
+        raw.append((A_DISCOUNT, r2(d["nonsales_discount"]), 0, generic(DISC_PREFIX), None))
 
     order = ["CASH", "MC", "RMPOST", "VISA", "DEBIT", "RC", "GIFT C", "CORP GC"]
     for key in order + [k for k in d["tenders"] if k not in order]:
@@ -589,7 +593,7 @@ def print_summary(d, profile, lines, journal_no, out_path, dry):
     print(f"   {'Total Tax':16s} {tax:>10.2f}")
     print(f"   {'Total Tips':16s} {d['tips_total']:>10.2f}   (non-cash {d['noncash_tips']:.2f} + auto grat {d['auto_grat']:.2f})")
     print(f"   {'Total Tenders':16s} {tenders:>10.2f}")
-    chk = r2(net_sales + tax + d["tips_total"])
+    chk = r2(net_sales + tax + d["tips_total"] - (d["nonsales_discount"] if profile["sales_basis"] == "net" else 0))
     print(f"   Check: Net Sales + Tax + Tips = {chk:.2f}  vs  Tenders = {tenders:.2f}  "
           f"-> {'OK' if abs(chk - tenders) < 0.005 else f'GAP {r2(tenders - chk):+.2f}'}")
     print("-" * 70)

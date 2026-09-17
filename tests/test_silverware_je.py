@@ -95,6 +95,21 @@ def test_indented_real_layout(tmp_path):
     assert r.returncode == 0 and "Balanced: YES" in r.stdout
 
 
+def test_nonsales_discount_gets_3050_on_net_basis(tmp_path):
+    txt = (S / "Pinewoods_2026-08-31.txt").read_text()
+    txt = txt.replace("$1,296.10", "$1,293.10")   # tenders drop by the $3 open-dollar discount
+    txt = txt.replace("Net Cash Owing", "Non-Sales             Qnty     Gross Amount      Refunds     Discounts        Amount\n"
+                      "09- DISCOUNT             1            $0.00        $0.00         $3.00        -$3.00\n"
+                      "   Total:                1            $0.00        $0.00         $3.00        -$3.00\n\nNet Cash Owing")
+    p = tmp_path / "x.txt"; p.write_text(txt)
+    r = subprocess.run([sys.executable, str(ROOT / "silverware_je.py"), str(p), "JJ1", "--out", str(tmp_path)],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "Balanced: YES" in r.stdout, r.stdout + r.stderr
+    rows = read(tmp_path / "JJ1_Pinewoods_2026-08-31.csv")
+    by = {r["*AccountName"]: r for r in rows}
+    assert by[sw.A_DISCOUNT]["Debits"] == "3.00" and by[sw.A_FOOD]["Credits"] == "4060.00"
+
+
 def test_wrong_outlet_refused(tmp_path):
     r = run("BearsDen_2026-08-28.txt", "JJ1", tmp_path, ["--outlet", "banquets"])
     assert r.returncode != 0 and "Cost Center" in (r.stdout + r.stderr)
