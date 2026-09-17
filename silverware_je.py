@@ -128,13 +128,14 @@ PROFILES = {
             "04 - BEER":      (A_BEER,    None,         None),
             "05 - N/A BEV":   (A_NABEV,   None,         None),
             "10- MODIFIERS":  (A_REVENUE, "Modifiers",  None),
-            "12- POOL TABLE": (A_REVENUE, "Pool Table", None),
+            "POOL TABLE":     (A_REVENUE, "Pool Table", None),   # printed as "Pool Table"
         },
         "tenders": {
             "CASH":    (A_CASH,     "Cash"),
             "MC":      (A_CARDS,    "MC"),
             "VISA":    (A_CARDS,    "Visa"),
             "DEBIT":   (A_CARDS,    "Debit"),
+            "RMPOST":  (A_CARDS,    "RMPOST"),  # confirmed 2026-09-17: same as Pinewoods
             "CORP GC": (A_GIFTCARD, "Corp GC"),
             "RC":      (A_CARDS,    "RC"),     # spec: no confirmed dedicated account - flagged
         },

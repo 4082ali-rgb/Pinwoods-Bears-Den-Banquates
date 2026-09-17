@@ -7,7 +7,7 @@ Sales                 Qnty     Gross Amount      Refunds     Discounts        Am
 02 - LIQUOR             40          $612.50        $0.00         $0.00       $612.50
 04 - BEER               35          $385.00        $0.00         $0.00       $385.00
 10- MODIFIERS            6           $12.00        $0.00         $0.00        $12.00
-12- POOL TABLE           4           $20.00        $0.00         $0.00        $20.00
+Pool Table               4           $20.00        $0.00         $0.00        $20.00
    Total:              205        $3,439.50        $0.00        $10.00     $3,429.50
 
 Taxes                 Qnty                                                   Amount
