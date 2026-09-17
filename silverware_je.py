@@ -98,7 +98,7 @@ PROFILES = {
             "04 - BEER":     (A_BEER,     None,       None),
             "05 - N/A BEV":  (A_NABEV,    None,       None),
             "10- MODIFIERS": (A_REVENUE,  "Modifers", None),
-            "11-BANQUETS":   (A_BANQUETS, "Banquets", C_BQ_FOOD),
+            "11-BANQUETS":   (A_BANQUETS, "Banquets", None),   # stays on 0020 (decided 2026-09-17)
         },
         "tenders": {
             "CASH":    (A_CASH,     None),
@@ -129,6 +129,7 @@ PROFILES = {
             "05 - N/A BEV":   (A_NABEV,   None,         None),
             "10- MODIFIERS":  (A_REVENUE, "Modifiers",  None),
             "POOL TABLE":     (A_REVENUE, "Pool Table", None),   # printed as "Pool Table"
+            "11-BANQUETS":    (A_BANQUETS, "Banquets",  None),   # stays on 0092 (decided 2026-09-17)
         },
         "tenders": {
             "CASH":    (A_CASH,     "Cash"),

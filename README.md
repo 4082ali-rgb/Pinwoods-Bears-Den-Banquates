@@ -69,7 +69,7 @@ Filter `Type = Sales` to see where revenue comes from.
 
 | | Pinewoods | Bears Den | Banquets |
 |---|---|---|---|
-| Class | `0020-PINEWOODS` (11-BANQUETS -> `0101 - BANQUET- FOOD`) | `0092-BEARS DEN` on every line | `0101 - BANQUET- FOOD`; Liquor/Wine/Beer sales -> `0102 - BANQUET LIQUOR` (tax lines stay on 0101) |
+| Class | `0020-PINEWOODS` on every line (11-BANQUETS included) | `0092-BEARS DEN` on every line (11-BANQUETS included) | `0101 - BANQUET- FOOD`; Liquor/Wine/Beer sales -> `0102 - BANQUET LIQUOR` (tax lines stay on 0101) |
 | Sales basis | Net Amount (discounts informational, flagged) | Net Amount (discounts informational) | Net Amount |
 | RC tender | `3051 ROOM CHARGE R/C` | `1007 ...` and flagged (no confirmed account yet) | `3051 ROOM CHARGE R/C` |
 | Memo | `Pinewoods Daily Revenue August 31 2026` | `Bears Den Daily Revenue August 28 2026` | `Banquets Daily Revenue 15 August 2026` |
