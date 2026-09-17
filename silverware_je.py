@@ -90,7 +90,7 @@ PROFILES = {
         "name": "Pinewoods",
         "cost_center": "Pinewoods",
         "default_class": C_PINEWOODS,
-        "sales_basis": "gross",
+        "sales_basis": "net",                # net Amount column (post-discount) - no 3050 line
         "sales": {
             "01 - FOOD":     (A_FOOD,     None,       None),
             "02 - LIQUOR":   (A_LIQUOR,   None,       None),
@@ -282,7 +282,7 @@ def lookup(mapping: dict, label: str):
 # ---------------------------------------------------------------------------
 
 def detect_profile(text: str, forced: str | None):
-    m = re.search(r"Cost Center:\s*(.+)", text)
+    m = re.search(r"Cost Center:\s*(.+)", normalise(text))
     cc = m.group(1).strip() if m else "?"
     match = None
     for key, p in PROFILES.items():
@@ -300,7 +300,13 @@ def detect_profile(text: str, forced: str | None):
     return match, cc
 
 
+def normalise(text: str) -> str:
+    """Real pdfplumber/pdftotext output is indented; anchor every line at column 0."""
+    return "\n".join(l.strip() for l in text.splitlines())
+
+
 def parse_report(text: str, profile: dict) -> dict:
+    text = normalise(text)
     d = {"flags": []}
 
     m = re.search(r"From Date:\s*(\d{4}-\d{2}-\d{2})", text)

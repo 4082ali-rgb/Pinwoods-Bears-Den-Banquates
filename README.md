@@ -69,17 +69,16 @@ Filter `Type = Sales` to see where revenue comes from.
 | | Pinewoods | Bears Den | Banquets |
 |---|---|---|---|
 | Class | `0020-PINEWOODS` (11-BANQUETS -> `0101 - BANQUET- FOOD`) | `0092-BEARS DEN` on every line | `0101 - BANQUET- FOOD`; Liquor/Wine/Beer sales -> `0102 - BANQUET LIQUOR` (tax lines stay on 0101) |
-| Sales basis | Gross, with one `3050 Discounts given` debit | Net Amount (discounts informational) | Net Amount |
+| Sales basis | Net Amount (discounts informational, flagged) | Net Amount (discounts informational) | Net Amount |
 | RC tender | `3051 ROOM CHARGE R/C` | `1007 ...` and flagged (no confirmed account yet) | `3051 ROOM CHARGE R/C` |
 | Memo | `Pinewoods Daily Revenue August 31 2026` | `Bears Den Daily Revenue August 28 2026` | `Banquets Daily Revenue 15 August 2026` |
 | Description prefix | Mapped lines only (Mastercard-, Visa-, Debit-, Modifers-) | Only when an account repeats that day (Modifiers-/Pool Table-, MC-/Visa-/Debit-) | Every line (`RC - `, `Liquor - `, `GST - ` ...) |
 | Tips | Non-Cash Tips + Auto Gratuity in ONE `6044` line, side derived from the balance | same | same |
 
-Note on Banquets discounts: the rules doc says to credit the net Amount *and* book a
-3050 discount debit, which cannot balance against tenders. The script credits net and
-flags the discount instead. If a day with Banquets discounts comes up, check the posted
-QBO entry and switch `sales_basis` to `"gross"` in the Banquets profile if that is what
-was actually posted.
+All outlets post the net **Amount** column (post-discount), never Gross, so no
+`3050 Discounts given` line is written. Discounts are still shown in the segment CSV and
+flagged in the terminal. To go back to gross + 3050 for an outlet, set its `sales_basis`
+to `"gross"` in the profile.
 
 ## Scanned / raster PDFs
 

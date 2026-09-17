@@ -24,7 +24,7 @@ def read(path):
 
 
 @pytest.mark.parametrize("sample,jn,fname,total,n", [
-    ("Pinewoods_2026-08-31.txt", "JJ3417", "JJ3417_Pinewoods_2026-08-31.csv", "6986.10", 16),
+    ("Pinewoods_2026-08-31.txt", "JJ3417", "JJ3417_Pinewoods_2026-08-31.csv", "6946.10", 15),
     ("BearsDen_2026-08-28.txt",  "JJ3382", "JJ3382_BearsDen_Aug28.csv",       "4212.38", 14),
     ("Banquets_2026-08-15.txt",  "JJ3431", "Banquets_JE_Aug15_2026.csv",      "8048.12", 11),
 ])
@@ -78,12 +78,21 @@ def test_bearsden_duplicate_prefix_rule(tmp_path):
     assert not any(r["*AccountName"] == sw.A_DISCOUNT for r in rows)
 
 
-def test_pinewoods_gross_plus_discount(tmp_path):
+def test_pinewoods_net_no_discount_line(tmp_path):
     run("Pinewoods_2026-08-31.txt", "JJ3417", tmp_path)
     rows = read(tmp_path / "JJ3417_Pinewoods_2026-08-31.csv")
     by = {r["*AccountName"]: r for r in rows}
-    assert by[sw.A_FOOD]["Credits"] == "4100.00" and by[sw.A_DISCOUNT]["Debits"] == "40.00"
+    assert by[sw.A_FOOD]["Credits"] == "4060.00" and sw.A_DISCOUNT not in by
     assert by[sw.A_GST]["Description"] == "Pinewoods Daily Revenue August 31 2026"
+
+
+def test_indented_real_layout(tmp_path):
+    """Real pdfplumber output is indented ~5 spaces; the parser must not depend on column 0."""
+    txt = "\n".join("     " + l for l in (S / "BearsDen_2026-08-28.txt").read_text().splitlines())
+    p = tmp_path / "x.txt"; p.write_text(txt)
+    r = subprocess.run([sys.executable, str(ROOT / "silverware_je.py"), str(p), "JJ1", "--out", str(tmp_path)],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "Balanced: YES" in r.stdout
 
 
 def test_wrong_outlet_refused(tmp_path):
