@@ -29,7 +29,7 @@ def read(path):
     ("Banquets_2026-08-15.txt",  "JJ3431", "Banquets_JE_Aug15_2026.csv",      "8048.12", 11),
 ])
 def test_sample_balances_and_writes(tmp_path, sample, jn, fname, total, n):
-    r = run(sample, jn, tmp_path)
+    r = run(sample, jn, tmp_path, ["--segments"])
     assert r.returncode == 0, r.stdout + r.stderr
     assert "Balanced: YES" in r.stdout
     raw = (tmp_path / fname).read_bytes()
@@ -118,6 +118,11 @@ def test_unbalanced_not_written(tmp_path):
     assert not list(tmp_path.glob("*.csv"))
 
 
+def test_default_writes_only_qbo_csv(tmp_path):
+    assert run("Banquets_2026-08-15.txt", "JJ3431", tmp_path).returncode == 0
+    assert [p.name for p in sorted(tmp_path.glob("*.csv"))] == ["Banquets_JE_Aug15_2026.csv", sw.RUN_LOG]
+
+
 def test_no_silent_overwrite(tmp_path):
     assert run("Banquets_2026-08-15.txt", "JJ3431", tmp_path).returncode == 0
     r = run("Banquets_2026-08-15.txt", "JJ3431", tmp_path)
@@ -126,9 +131,9 @@ def test_no_silent_overwrite(tmp_path):
 
 
 def test_ledger_upserts_same_day(tmp_path):
-    run("Banquets_2026-08-15.txt", "JJ3431", tmp_path)
-    run("Banquets_2026-08-15.txt", "JJ3499", tmp_path, ["--force"])
-    run("BearsDen_2026-08-28.txt", "JJ3382", tmp_path)
+    run("Banquets_2026-08-15.txt", "JJ3431", tmp_path, ["--segments"])
+    run("Banquets_2026-08-15.txt", "JJ3499", tmp_path, ["--force", "--segments"])
+    run("BearsDen_2026-08-28.txt", "JJ3382", tmp_path, ["--segments"])
     led = read(tmp_path / sw.SEGMENT_LEDGER)
     bq = [r for r in led if r["Outlet"] == "Banquets"]
     assert bq and all(r["JournalNo"] == "JJ3499" for r in bq)      # replaced, not duplicated

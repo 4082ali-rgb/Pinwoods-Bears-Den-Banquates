@@ -26,6 +26,7 @@ python3 silverware_je.py Bears_Den_Aug_28.pdf JJ3382 --out ./csv
 python3 silverware_je.py Banquets_Aug_15.pdf  JJ3431 --out ./csv
 python3 silverware_je.py PW_Aug_31.pdf        JJ3417 --out ./csv --dry-run   # preview only
 python3 silverware_je.py scanned_report.txt   JJ3440 --out ./csv             # OCR'd text works too
+python3 silverware_je.py PW_Sep_02.pdf        JJ3494 --out ./csv --segments  # also write segment CSVs
 ```
 
 The journal number is always supplied by you (the outlets share one QBO sequence, so
@@ -37,8 +38,8 @@ the detected outlet; it will not override a mismatching Cost Center.
 | File | What it is |
 |---|---|
 | `JJ3417_Pinewoods_2026-08-31.csv` / `JJ3382_BearsDen_Aug28.csv` / `Banquets_JE_Aug15_2026.csv` | The QBO import file (one per day, CRLF, no BOM, no commas in text) |
-| `..._segments.csv` | That day's revenue by segment: Date, Outlet, JournalNo, Type, Segment, Account, Class, Gross, Discount, Net |
-| `revenue_by_segment.csv` | Cumulative version of the above across every run and outlet. Open in Excel and pivot on Date x Segment. Re-running a day replaces that day's rows, never duplicates them |
+| `..._segments.csv` (only with `--segments`) | That day's revenue by segment: Date, Outlet, JournalNo, Type, Segment, Account, Class, Gross, Discount, Net |
+| `revenue_by_segment.csv` (only with `--segments`) | Cumulative version of the above across every run and outlet. Open in Excel and pivot on Date x Segment. Re-running a day replaces that day's rows, never duplicates them |
 | `silverware_log.csv` | JournalNo, Outlet, Date, when it was processed, file written |
 
 Segment rows have `Type` = `Sales` (one per category), `Sales Total`, `Tax`, `Tips`, `Tender`.

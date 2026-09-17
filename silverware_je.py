@@ -26,8 +26,8 @@ For every run the script:
   4. Maps everything to GL accounts / classes per the outlet's rules
   5. Proves Debits == Credits - an unbalanced entry is NEVER written
   6. Writes the QBO journal CSV (CRLF line endings, no BOM)
-  7. Writes <JournalNo>_<Outlet>_<date>_segments.csv  (date / outlet / segment / amount)
-     and upserts the same rows into revenue_by_segment.csv (cumulative, all outlets)
+  7. With --segments, also writes <JournalNo>_<Outlet>_<date>_segments.csv and upserts
+     the rows into revenue_by_segment.csv (cumulative, all outlets)
   8. Appends to silverware_log.csv (JournalNo, Outlet, Date, file) and prints FLAGS
 
 Anything unrecognised (new tender, new sales category, new tax line) STOPS the script
@@ -652,6 +652,8 @@ def main():
     ap.add_argument("--outlet", choices=sorted(PROFILES), help="force an outlet (must still match Cost Center)")
     ap.add_argument("--dry-run", action="store_true", help="print the entry but write nothing")
     ap.add_argument("--force", action="store_true", help="overwrite an already-delivered CSV")
+    ap.add_argument("--segments", action="store_true",
+                    help="also write the revenue-by-segment CSV and update revenue_by_segment.csv")
     args = ap.parse_args()
 
     if not args.report.exists():
@@ -680,10 +682,11 @@ def main():
     if not args.dry_run:
         args.out.mkdir(parents=True, exist_ok=True)
         write_csv(lines, out_path)
-        write_segments(segment_rows(d, profile, args.journal_no), seg_path, args.out / SEGMENT_LEDGER)
+        if args.segments:
+            write_segments(segment_rows(d, profile, args.journal_no), seg_path, args.out / SEGMENT_LEDGER)
         append_log(args.out / RUN_LOG, args.journal_no, profile, d, out_path)
     print_summary(d, profile, lines, args.journal_no, out_path, args.dry_run)
-    if not args.dry_run:
+    if not args.dry_run and args.segments:
         print(f"Segments: {seg_path}")
         print(f"Ledger:   {args.out / SEGMENT_LEDGER}  (cumulative, all outlets)")
 
