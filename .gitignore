@@ -4,3 +4,9 @@ __pycache__/
 out/
 csv/
 *.pdf
+
+# offline batch runner: personal/local state, never committed
+journal_state.json
+inbox/*.pdf
+output/*.csv
+output/*.pdf

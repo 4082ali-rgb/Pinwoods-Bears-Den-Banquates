@@ -17,6 +17,59 @@ pip install -r requirements.txt         # pdfplumber fallback + pytest
 
 ## Daily use
 
+### Offline, no typing - drop and double-click (Windows)
+
+For running this without typing commands each day:
+
+- **inbox** - where you drop the day's PDFs.
+- **output** - where the finished CSV shows up, and where the PDFs you dropped get moved
+  to automatically once the entry is built. This keeps `inbox` empty and ready for tomorrow.
+
+The routine:
+
+1. Download the PDFs into the `inbox` folder.
+2. Double-click **RUN.bat**.
+3. First time, it asks for the journal number. After that it counts up by itself.
+4. Open `output` and import the CSV(s) into QuickBooks.
+
+A drop can mix Pinewoods, Bears Den and Banquets PDFs and any dates - each one is matched
+to its outlet by the report's own Cost Center, sorted into date order, and given consecutive
+journal numbers. Nothing is typed.
+
+If a report is unbalanced, has an unrecognised category, or is the wrong outlet, RUN.bat
+prints `STOP:` for that file, leaves it in `inbox` untouched, and does not use up a journal
+number for it - fix the report or the mapping and run again.
+
+If you ever drop PDFs straight into the main folder instead of `inbox`, that still works too
+- it's a fallback, not a requirement.
+
+#### RESET JOURNAL NUMBER.bat
+
+If the journal number sequence needs to start fresh (you skipped days, or the count got out
+of sync with QuickBooks), double-click **RESET JOURNAL NUMBER.bat**. It asks you to type the
+word `YES` before it clears anything, so an accidental double-click can't wipe the journal
+number by mistake. After a reset, the next RUN asks you for a number again instead of guessing.
+
+#### SET JOURNAL NUMBER.bat
+
+Type a number, press Enter - RUN will use that number next.
+
+#### ADD ACCOUNT.bat
+
+When a report shows a sales category or payment tender that's never appeared before, double-
+click **ADD ACCOUNT.bat** instead of editing `silverware_je.py`. It asks which outlet, the
+label as printed on the report, the QBO account, and an optional description prefix and class
+override, then saves it to `extra_accounts.json`. Both `RUN.bat` and running
+`silverware_je.py` directly pick it up automatically on the next run.
+
+None of this changes the accounting rules, GL mappings, balance checks, or CSV format - it's
+only about where files live and how the journal number is tracked. An unbalanced or
+unrecognised report still stops with `STOP:` and nothing is written, same as always.
+
+On Mac/Linux, run `python3 run_batch.py`, `python3 reset_journal_number.py`,
+`python3 set_journal_number.py`, or `python3 add_account.py` directly instead of the `.bat`
+files.
+
 ```bash
 python3 silverware_je.py <report.pdf> <JournalNo> [--out DIR] [--dry-run]
 ```
@@ -108,6 +161,15 @@ classes, prefixes, the unknown-tender / unbalanced / wrong-outlet stops, and the
 ## Files
 
 - `silverware_je.py` - the tool. Outlet profiles (account + class maps) are at the top.
+- `run_batch.py` / `RUN.bat` - drag-and-drop batch runner: processes everything in `inbox`,
+  auto-increments the journal number, moves finished PDFs into `output`.
+- `reset_journal_number.py` / `RESET JOURNAL NUMBER.bat` - clears the saved journal number.
+- `set_journal_number.py` / `SET JOURNAL NUMBER.bat` - sets the next journal number directly.
+- `add_account.py` / `ADD ACCOUNT.bat` - adds a new sales category or tender to
+  `extra_accounts.json` without editing `silverware_je.py`.
+- `journal_state.json` - saved next journal number (not committed - personal/local).
+- `extra_accounts.json` - categories/tenders added via ADD ACCOUNT, merged into the outlet
+  profiles automatically on every run.
 - `legacy_pinewoods_je.py` - the original Pinewoods-only script, kept for reference.
 - `docs/` - the Banquets rules, the Bears Den spec, and the original Pinewoods README.
 - `samples/`, `tests/` - fixtures and regression tests.

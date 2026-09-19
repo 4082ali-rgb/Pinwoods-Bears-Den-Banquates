@@ -37,6 +37,7 @@ profile below and re-run.
 
 import argparse
 import csv
+import json
 import re
 import shutil
 import subprocess
@@ -72,6 +73,14 @@ C_BQ_FOOD   = "0101 - BANQUET- FOOD"
 C_BQ_LIQUOR = "0102 - BANQUET LIQUOR"
 
 TAX_MAP = {"GST": A_GST, "PST": A_PST, "ALCOHOL": A_PST_LIQ}
+
+# ---------------------------------------------------------------------------
+# EXTRA_ACCOUNTS_FILE  -  categories/tenders added later via ADD ACCOUNT, without
+# touching this file. Format: {"pinewoods": {"sales": {"LABEL": [account, prefix,
+# class]}, "tenders": {...}}, "bearsden": {...}, "banquets": {...}}. prefix/class
+# may be null. Loaded once, right after PROFILES is defined below.
+# ---------------------------------------------------------------------------
+EXTRA_ACCOUNTS_FILE = "extra_accounts.json"
 
 # ---------------------------------------------------------------------------
 # OUTLET PROFILES  -  edit here when a mapping changes or a new line appears
@@ -175,6 +184,31 @@ PROFILES = {
         "filename": "Banquets_JE_{mon}{dd}_{yyyy}.csv",
     },
 }
+
+
+def _load_extra_accounts():
+    """Merge extra_accounts.json (written by ADD ACCOUNT) into PROFILES, if present.
+    Looked for next to this script first, then in the current working directory."""
+    for base in (Path(__file__).resolve().parent, Path.cwd()):
+        p = base / EXTRA_ACCOUNTS_FILE
+        if not p.exists():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"WARNING: could not read {p}: {e}", file=sys.stderr)
+            return
+        for outlet, sections in data.items():
+            if outlet not in PROFILES:
+                print(f"WARNING: {p} has an entry for unknown outlet '{outlet}' - ignored.", file=sys.stderr)
+                continue
+            for section in ("sales", "tenders"):
+                for label, entry in sections.get(section, {}).items():
+                    PROFILES[outlet][section][label] = tuple(entry)
+        return  # only the first extra_accounts.json found is used
+
+
+_load_extra_accounts()
 
 # tax / tip / discount description prefixes (used only when the profile prefixes those lines)
 TAX_PREFIX = {"GST": "GST", "PST": "PST", "ALCOHOL": "Alcohol Tax"}

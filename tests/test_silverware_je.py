@@ -110,6 +110,19 @@ def test_nonsales_discount_gets_3050_on_net_basis(tmp_path):
     assert by[sw.A_DISCOUNT]["Debits"] == "3.00" and by[sw.A_FOOD]["Credits"] == "4060.00"
 
 
+def test_extra_accounts_json_merges_into_profiles(tmp_path):
+    (tmp_path / "extra_accounts.json").write_text(
+        '{"pinewoods": {"sales": {"12- CATERING": ["3001 Revenue", "Catering", null]}}}',
+        encoding="utf-8")
+    r = subprocess.run(
+        [sys.executable, "-c",
+         f"import sys; sys.path.insert(0, {str(ROOT)!r}); import os; os.chdir({str(tmp_path)!r}); "
+         "import silverware_je as sw; print(sw.PROFILES['pinewoods']['sales']['12- CATERING'])"],
+        capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert "('3001 Revenue', 'Catering', None)" in r.stdout
+
+
 def test_wrong_outlet_refused(tmp_path):
     r = run("BearsDen_2026-08-28.txt", "JJ1", tmp_path, ["--outlet", "banquets"])
     assert r.returncode != 0 and "Cost Center" in (r.stdout + r.stderr)
