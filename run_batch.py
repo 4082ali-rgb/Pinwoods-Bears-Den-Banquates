@@ -40,12 +40,14 @@ STATE_FILE = ROOT / "journal_state.json"
 
 
 def find_pdfs():
+    """PDFs in inbox/, plus any .txt files (pre-extracted or OCR'd elsewhere - drop one in
+    when a scanned report has no OCR engine installed and silverware_je.py can't read it)."""
     INBOX.mkdir(exist_ok=True)
     OUTPUT.mkdir(exist_ok=True)
-    pdfs = sorted(INBOX.glob("*.pdf"))
-    if pdfs:
-        return pdfs
-    # Fallback: PDFs dropped straight into the main folder, the old way.
+    reports = sorted(INBOX.glob("*.pdf")) + sorted(INBOX.glob("*.txt"))
+    if reports:
+        return reports
+    # Fallback: reports dropped straight into the main folder, the old way.
     return sorted(p for p in ROOT.glob("*.pdf") if p.is_file())
 
 

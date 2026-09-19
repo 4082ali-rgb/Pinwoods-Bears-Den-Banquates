@@ -1,2 +1,6 @@
 pdfplumber>=0.10        # fallback text extraction when pdftotext (poppler-utils) is not installed
 pytest>=7               # tests only
+
+# optional - only needed for scanned/raster PDFs with no text layer
+pytesseract>=0.3        # OCR
+pdf2image>=1.16         # rasterizes PDF pages for OCR (needs poppler, see README)

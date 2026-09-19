@@ -15,6 +15,34 @@ sudo apt install poppler-utils          # pdftotext (Mac: brew install poppler)
 pip install -r requirements.txt         # pdfplumber fallback + pytest
 ```
 
+**Windows**: install [Python](https://www.python.org/downloads/) (check "Add python.exe to PATH"
+during setup), then from a Command Prompt in this folder run `pip install -r requirements.txt`.
+`pdftotext` isn't available on Windows by default - `pdfplumber` (in requirements.txt) covers
+that automatically, no separate install needed.
+
+### If a report is a scanned/raster PDF (no text layer)
+
+Most Silverware exports have a real text layer and just work. A minority - usually a photo or
+a scan of a printed report - don't, and `pdftotext`/`pdfplumber` come back empty. Two ways to
+handle that one file:
+
+1. **Install OCR once, and it's automatic from then on.** `pip install pytesseract pdf2image`
+   (already listed in `requirements.txt`), plus the Tesseract OCR engine itself:
+   - Windows: install from the [UB-Mannheim Tesseract build](https://github.com/UB-Mannheim/tesseract/wiki)
+     and [poppler for Windows](https://github.com/oschwartz10612/poppler-windows/releases/)
+     (pdf2image needs poppler too), then add both install folders to your PATH and restart
+     the Command Prompt / re-run RUN.bat.
+   - Mac: `brew install tesseract poppler`
+   - Linux: `sudo apt install tesseract-ocr poppler-utils`
+
+   Once installed, RUN.bat and `silverware_je.py` OCR scanned PDFs automatically - nothing
+   else changes.
+
+2. **No install, one-off.** Drop a pre-extracted `.txt` file into `inbox` instead of the PDF
+   (the batch runner and `silverware_je.py` both accept plain text with the same layout as the
+   report). If you don't have a way to OCR it yourself, share the PDF and it can be extracted
+   for you and handed back as a `.txt` to drop in.
+
 ## Daily use
 
 ### Offline, no typing - drop and double-click (Windows)
