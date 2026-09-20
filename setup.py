@@ -37,7 +37,7 @@ def main():
     print()
 
     print("Installing required packages (pdfplumber, pytest, and the optional OCR")
-    print("packages pytesseract/pdf2image)...")
+    print("package pytesseract)...")
     req = ROOT / "requirements.txt"
     result = subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(req)])
     if result.returncode == 0:
@@ -70,20 +70,20 @@ def main():
     has_tesseract = shutil.which("tesseract") is not None
     try:
         import pytesseract  # noqa: F401
-        import pdf2image  # noqa: F401
         has_py_ocr = True
     except ImportError:
         has_py_ocr = False
 
     if has_tesseract and has_py_ocr:
-        ok("OCR is fully set up - scanned PDFs will be handled automatically.")
+        ok("OCR is fully set up - scanned PDFs will be handled automatically. "
+          "(No poppler needed - pages are rendered by pdfplumber.)")
     else:
         missing("OCR is not fully set up yet. Most reports don't need this - only a scanned or")
         missing("photographed one will. If that happens, either:")
         missing("  1) install Tesseract OCR (Windows: "
-               "https://github.com/UB-Mannheim/tesseract/wiki) and poppler (Windows: "
-               "https://github.com/oschwartz10612/poppler-windows/releases/), add both to PATH, "
-               "then re-run this setup - OCR then works automatically from then on, or")
+               "https://github.com/UB-Mannheim/tesseract/wiki - just the OCR engine, no "
+               "poppler needed), add it to PATH, then re-run this setup - OCR then works "
+               "automatically from then on, or")
         missing("  2) get the report as a .txt file (OCR'd elsewhere) and drop that into inbox "
                "instead of the PDF - no install needed.")
     print()

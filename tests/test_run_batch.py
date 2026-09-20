@@ -33,9 +33,11 @@ def test_mixed_drop_orders_by_date_and_increments(tmp_path):
     r = run(repo, stdin_text="JJ7000\n")
     assert r.returncode == 0, r.stdout + r.stderr
     assert not list((repo / "inbox").iterdir())  # both moved out
-    csvs = sorted((repo / "output").glob("*.csv"))
-    assert any("JJ7000" in c.name and "BearsDen" in c.name for c in csvs)   # 28 Aug processed first
-    assert any("JJ7001" in c.name and "Pinewoods" in c.name for c in csvs)  # 31 Aug processed second
+    csvs = sorted((repo / "output").glob("*/*/*.csv"))
+    assert any("JJ7000" in c.name and c.parent.parent.name == "Bears Den" for c in csvs)  # 28 Aug first
+    assert any("JJ7001" in c.name and c.parent.parent.name == "Pinewoods" for c in csvs)  # 31 Aug second
+    assert (repo / "output" / "Bears Den" / "2026-08-28" / "earlier.txt").exists()
+    assert (repo / "output" / "Pinewoods" / "2026-08-31" / "later.txt").exists()
     state = json.loads((repo / "journal_state.json").read_text())
     assert state["next"] == "JJ7002"
 
@@ -49,7 +51,7 @@ def test_bad_file_does_not_kill_the_batch(tmp_path):
     assert "STOP: garbage.txt" in r.stdout
     assert (repo / "inbox" / "garbage.txt").exists()          # left in place
     assert not (repo / "inbox" / "good.txt").exists()          # good one still processed
-    csvs = list((repo / "output").glob("*.csv"))
+    csvs = list((repo / "output").glob("*/*/*.csv"))
     assert len(csvs) == 1 and "JJ7100" in csvs[0].name          # bad file didn't consume a number
     state = json.loads((repo / "journal_state.json").read_text())
     assert state["next"] == "JJ7101"
@@ -63,7 +65,7 @@ def test_unbalanced_file_leaves_journal_number_untouched(tmp_path):
     assert r.returncode == 0
     assert "does not balance" in r.stdout
     assert (repo / "inbox" / "unbalanced.txt").exists()
-    assert not list((repo / "output").glob("*.csv"))
+    assert not list((repo / "output").glob("*/*/*.csv"))
     assert not (repo / "journal_state.json").exists()  # never consumed, nothing to save
 
 
@@ -75,7 +77,7 @@ def test_saved_journal_number_is_reused_next_run(tmp_path):
     shutil.copy(S / "Pinewoods_2026-08-31.txt", repo / "inbox" / "day2.txt")
     r2 = run(repo)  # no stdin needed - the number is already saved
     assert r2.returncode == 0, r2.stdout + r2.stderr
-    assert any("JJ7301" in c.name for c in (repo / "output").glob("*.csv"))
+    assert any("JJ7301" in c.name for c in (repo / "output").glob("*/*/*.csv"))
 
 
 def test_invalid_saved_state_asks_again_instead_of_crashing(tmp_path):
@@ -84,7 +86,7 @@ def test_invalid_saved_state_asks_again_instead_of_crashing(tmp_path):
     shutil.copy(S / "BearsDen_2026-08-28.txt", repo / "inbox" / "day1.txt")
     r = run(repo, stdin_text="JJ7400\n")
     assert r.returncode == 0, r.stdout + r.stderr
-    assert any("JJ7400" in c.name for c in (repo / "output").glob("*.csv"))
+    assert any("JJ7400" in c.name for c in (repo / "output").glob("*/*/*.csv"))
 
 
 def test_empty_inbox_no_error(tmp_path):

@@ -269,16 +269,79 @@ def extract_text(path: Path) -> str:
 
 
 def ocr_text(path: Path) -> str:
-    """Best-effort OCR for raster PDFs. Returns '' if no OCR engine is available."""
+    """Best-effort OCR for raster PDFs. Returns '' if no OCR engine is available.
+    Renders pages via pdfplumber (pypdfium2 under the hood) - no poppler/pdf2image
+    needed, just the Tesseract OCR engine itself plus the pytesseract binding.
+
+    Plain pytesseract.image_to_string collapses every gap to a single space, which
+    destroys the column spacing the parser relies on to tell a row's label apart
+    from its numbers (a label and its Amount column can be right next to each
+    other in the words tesseract returns). So instead this reconstructs the
+    layout from tesseract's per-word positions, the same way `pdftotext -layout`
+    would: words are placed at a column derived from their pixel x-position, using
+    the page's own average character width - producing the same "label ... many
+    spaces ... numbers" shape the rest of the parser already expects."""
     try:
         import pytesseract
-        from pdf2image import convert_from_path
+        import pdfplumber
     except ImportError:
         return ""
     if not shutil.which("tesseract"):
         return ""
-    pages = convert_from_path(str(path), dpi=300)
-    return "\n\f".join(pytesseract.image_to_string(p, config="--psm 6") for p in pages)
+    texts = []
+    with pdfplumber.open(str(path)) as pdf:
+        for page in pdf.pages:
+            image = page.to_image(resolution=300).original
+            texts.append(_ocr_page_layout(image, pytesseract))
+    return "\n\f".join(texts)
+
+
+def _ocr_page_layout(image, pytesseract) -> str:
+    """One OCR'd page -> text with tesseract's word positions reassembled into
+    fixed-width-ish columns, instead of pytesseract's own single-space-collapsed
+    image_to_string output.
+
+    Spacing is derived from the actual pixel GAP between each pair of adjacent
+    words on a line (not each word's absolute position) - a small gap always
+    becomes exactly one space, so two words that are genuinely adjacent in the
+    source (e.g. a tender label like "CASH (0.00CAD)") can never be split apart
+    by rounding, while a real column gap still becomes several spaces."""
+    from pytesseract import Output
+    data = pytesseract.image_to_data(image, config="--psm 6", output_type=Output.DICT)
+    n = len(data["text"])
+
+    total_width = total_chars = 0
+    for i in range(n):
+        word = data["text"][i].strip()
+        if word:
+            total_width += data["width"][i]
+            total_chars += len(word)
+    char_w = (total_width / total_chars) if total_chars else 8.0
+
+    lines: dict[tuple[int, int, int], list[tuple[int, int, str]]] = {}
+    for i in range(n):
+        word = data["text"][i]
+        if not word.strip():
+            continue
+        key = (data["block_num"][i], data["par_num"][i], data["line_num"][i])
+        lines.setdefault(key, []).append((data["left"][i], data["width"][i], word))
+
+    out_lines = []
+    for key in sorted(lines):
+        line = ""
+        prev_right = None
+        for left, width, word in sorted(lines[key]):
+            if prev_right is None:
+                line = word
+            else:
+                gap_chars = (left - prev_right) / char_w
+                # < ~2 chars of gap is just a normal space between two words of the
+                # same label; anything wider is a real column boundary.
+                n_spaces = 1 if gap_chars < 2.2 else max(2, round(gap_chars))
+                line += " " * n_spaces + word
+            prev_right = left + width
+        out_lines.append(line)
+    return "\n".join(out_lines)
 
 # ---------------------------------------------------------------------------
 # Parsing helpers

@@ -29,15 +29,16 @@ Most Silverware exports have a real text layer and just work. A minority - usual
 a scan of a printed report - don't, and `pdftotext`/`pdfplumber` come back empty. Two ways to
 handle that one file:
 
-1. **Install OCR once, and it's automatic from then on.** `pip install pytesseract pdf2image`
-   (already listed in `requirements.txt`), plus the Tesseract OCR engine itself:
-   - Windows: install from the [UB-Mannheim Tesseract build](https://github.com/UB-Mannheim/tesseract/wiki)
-     and [poppler for Windows](https://github.com/oschwartz10612/poppler-windows/releases/)
-     (pdf2image needs poppler too), then add both install folders to your PATH and restart
-     the Command Prompt / re-run RUN.bat.
-   - Mac: `brew install tesseract poppler`
-   - Linux: `sudo apt install tesseract-ocr poppler-utils`
+1. **Install OCR once, and it's automatic from then on.** Just the Tesseract OCR engine
+   itself - `pytesseract` is already in `requirements.txt`, and pages are rendered by
+   `pdfplumber`, so **no poppler install is needed for OCR** (poppler is only ever used for
+   `pdftotext`, and `pdfplumber` already covers that too):
+   - Windows: install from the [UB-Mannheim Tesseract build](https://github.com/UB-Mannheim/tesseract/wiki),
+     add its install folder to PATH, then restart the Command Prompt / re-run RUN.bat.
+   - Mac: `brew install tesseract`
+   - Linux: `sudo apt install tesseract-ocr`
 
+   Run `SETUP.bat` (or `python3 setup.py`) afterward to confirm it says OCR is ready.
    Once installed, RUN.bat and `silverware_je.py` OCR scanned PDFs automatically - nothing
    else changes.
 
@@ -53,8 +54,9 @@ handle that one file:
 For running this without typing commands each day:
 
 - **inbox** - where you drop the day's PDFs.
-- **output** - where the finished CSV shows up, and where the PDFs you dropped get moved
-  to automatically once the entry is built. This keeps `inbox` empty and ready for tomorrow.
+- **output** - where the finished CSV shows up, organised as `output/<Outlet>/<Date>/`
+  (e.g. `output/Pinewoods/2026-09-17/JJ3494_Pinewoods_2026-09-17.csv`), and the PDF you
+  dropped gets moved into that same folder. This keeps `inbox` empty and ready for tomorrow.
 
 The routine:
 

@@ -1,5 +1,6 @@
 """Regression tests: each sample must parse, balance, and emit the expected QBO CSV shape."""
 import csv
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -137,6 +138,38 @@ def test_malformed_extra_account_entry_ignored_not_crashed(tmp_path):
     assert r.returncode == 0, r.stderr
     assert r.stdout.splitlines()[-2:] == ["False", "False"]
     assert "malformed" in r.stderr.lower() or "comma" in r.stderr.lower()
+
+
+def test_ocr_layout_reconstruction_keeps_labels_intact():
+    """Regression for a real bug: naive per-word column rounding split a tender
+    label like 'CASH (0.00CAD)' into two separate rows ('CASH' and 'CAD'), because
+    the two words' absolute x-positions rounded to different columns even though
+    the pixel GAP between them was just a normal single-space gap. The gap-based
+    reconstruction must keep adjacent words on one label and only widen the gap
+    into real column spacing between genuinely separated columns."""
+    class FakePytesseract:
+        @staticmethod
+        def image_to_data(image, config=None, output_type=None):
+            # left, width, text - mimics a real tesseract word list for one line:
+            # "CASH (0.00CAD)      3.00           $68.95"
+            words = [
+                (40, 60, "CASH"), (108, 130, "(0.00CAD)"),
+                (500, 40, "3.00"), (900, 70, "$68.95"),
+            ]
+            return {
+                "text": [w[2] for w in words],
+                "left": [w[0] for w in words],
+                "width": [w[1] for w in words],
+                "block_num": [1] * len(words),
+                "par_num": [1] * len(words),
+                "line_num": [1] * len(words),
+            }
+
+    result = sw._ocr_page_layout(image=None, pytesseract=FakePytesseract)
+    label = re.split(r"\s{2,}", result.strip())[0].strip()
+    assert label == "CASH (0.00CAD)", f"label got split: {result!r}"
+    amounts = re.findall(sw.MONEY, result)
+    assert amounts == ["$68.95"]
 
 
 def test_wrong_outlet_refused(tmp_path):

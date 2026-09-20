@@ -3,9 +3,9 @@
 run_batch.py  -  drag-and-drop batch runner for silverware_je.py
 
     inbox/   drop the day's PDFs here (any mix of Pinewoods, Bears Den, Banquets)
-    output/  finished CSVs land here, and the PDFs you dropped get moved here too
-             once their entry is built - this keeps inbox empty and ready for
-             tomorrow
+    output/  finished CSVs land here under output/<Outlet>/<Date>/, and the report
+             you dropped gets moved into that same folder - this keeps inbox
+             empty and ready for tomorrow, and output organised by outlet and day
 
 Double-click RUN.bat (Windows) or run `python3 run_batch.py` directly.
 
@@ -89,15 +89,22 @@ def save_next_number(jn: str):
     STATE_FILE.write_text(json.dumps({"next": jn}, indent=2), encoding="utf-8")
 
 
-def move_to_output(src: Path) -> Path:
-    """Move src into output/, adding a numeric suffix if that name is already there
+def outlet_date_dir(profile: dict, d: dict) -> Path:
+    """output/<Outlet>/<YYYY-MM-DD>/ - created on demand."""
+    out_dir = OUTPUT / profile["name"] / d["date"].isoformat()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir
+
+
+def move_report(src: Path, out_dir: Path) -> Path:
+    """Move src into out_dir, adding a numeric suffix if that name is already there
     (e.g. the same report dropped and processed twice) instead of crashing."""
-    dest = OUTPUT / src.name
+    dest = out_dir / src.name
     if dest.exists():
         n = 2
-        while (OUTPUT / f"{src.stem}_{n}{src.suffix}").exists():
+        while (out_dir / f"{src.stem}_{n}{src.suffix}").exists():
             n += 1
-        dest = OUTPUT / f"{src.stem}_{n}{src.suffix}"
+        dest = out_dir / f"{src.stem}_{n}{src.suffix}"
     src.rename(dest)
     return dest
 
@@ -148,9 +155,10 @@ def main():
                 print()
                 continue
 
-            out_path = OUTPUT / sw.out_filename(profile, journal_no, d)
+            out_dir = outlet_date_dir(profile, d)
+            out_path = out_dir / sw.out_filename(profile, journal_no, d)
             if out_path.exists():
-                print(f"STOP: {out_path.name} already exists in output.")
+                print(f"STOP: {out_path.relative_to(OUTPUT)} already exists in output.")
                 print("      Not overwritten - move or rename it first if this is really a new entry.")
                 print()
                 continue
@@ -165,11 +173,11 @@ def main():
 
         sw.print_summary(d, profile, lines, journal_no, out_path, False)
         try:
-            moved_to = move_to_output(report)
-            print(f"Moved {report.name} -> output/{moved_to.name}")
+            moved_to = move_report(report, out_dir)
+            print(f"Moved {report.name} -> output/{moved_to.relative_to(OUTPUT)}")
         except OSError as e:
-            print(f"NOTE: entry was written to {out_path.name}, but couldn't move {report.name} "
-                 f"into output/ ({e}). Move it there by hand so inbox stays clear.")
+            print(f"NOTE: entry was written to {out_path.relative_to(OUTPUT)}, but couldn't move "
+                 f"{report.name} into that folder ({e}). Move it there by hand so inbox stays clear.")
         print()
 
         journal_no = bump(journal_no)
