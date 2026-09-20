@@ -42,6 +42,7 @@ import re
 import shutil
 import subprocess
 import sys
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -204,6 +205,17 @@ def _load_extra_accounts():
                 continue
             for section in ("sales", "tenders"):
                 for label, entry in sections.get(section, {}).items():
+                    if (not isinstance(entry, (list, tuple)) or len(entry) != 3
+                            or not isinstance(entry[0], str) or not entry[0].strip()):
+                        print(f"WARNING: {p} entry for '{label}' ({outlet}/{section}) is malformed "
+                             f"- expected [account, prefix-or-null, class-or-null], got {entry!r}. "
+                             f"Ignored - re-add it with ADD ACCOUNT.", file=sys.stderr)
+                        continue
+                    if any(isinstance(x, str) and "," in x for x in entry):
+                        print(f"WARNING: {p} entry for '{label}' ({outlet}/{section}) contains a comma, "
+                             f"which breaks the CSV import - ignored. Re-add it without the comma.",
+                             file=sys.stderr)
+                        continue
                     PROFILES[outlet][section][label] = tuple(entry)
         return  # only the first extra_accounts.json found is used
 
@@ -362,6 +374,10 @@ def parse_report(text: str, profile: dict) -> dict:
     sales_disc = 0.0
     for label, amts in rows(sales_block):
         if len(amts) < 4:
+            if amts:  # a line with *some* numbers that don't parse as 4 columns - don't lose it silently
+                d["flags"].append(f"Sales row '{label}' had {len(amts)} amount(s), expected 4 "
+                                  f"(Gross/Refunds/Discounts/Amount) - skipped, not posted. "
+                                  f"Likely an OCR/extraction glitch - check the source report.")
             continue
         gross, refund, disc, net = (money(a) for a in amts[:4])
         key = lookup(profile["sales"], label)
@@ -505,7 +521,6 @@ def build_lines(d: dict, profile: dict, journal_no: str) -> list[dict]:
                                   "that balances; double-check the tips figure.")
 
     # description prefixes
-    from collections import Counter
     acct_count = Counter(x[0] for x in raw)
 
     def desc(acct, prefix):

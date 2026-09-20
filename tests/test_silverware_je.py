@@ -123,6 +123,22 @@ def test_extra_accounts_json_merges_into_profiles(tmp_path):
     assert "('3001 Revenue', 'Catering', None)" in r.stdout
 
 
+def test_malformed_extra_account_entry_ignored_not_crashed(tmp_path):
+    (tmp_path / "extra_accounts.json").write_text(
+        '{"pinewoods": {"sales": {"BAD1": ["3001 Revenue", "no-class-field"], '
+        '"BAD2": ["3001 Rev,enue", "has comma", null]}}}',
+        encoding="utf-8")
+    r = subprocess.run(
+        [sys.executable, "-c",
+         f"import sys; sys.path.insert(0, {str(ROOT)!r}); import os; os.chdir({str(tmp_path)!r}); "
+         "import silverware_je as sw; print('BAD1' in sw.PROFILES['pinewoods']['sales']); "
+         "print('BAD2' in sw.PROFILES['pinewoods']['sales'])"],
+        capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.splitlines()[-2:] == ["False", "False"]
+    assert "malformed" in r.stderr.lower() or "comma" in r.stderr.lower()
+
+
 def test_wrong_outlet_refused(tmp_path):
     r = run("BearsDen_2026-08-28.txt", "JJ1", tmp_path, ["--outlet", "banquets"])
     assert r.returncode != 0 and "Cost Center" in (r.stdout + r.stderr)

@@ -13,8 +13,26 @@ OUTLETS = {"1": ("pinewoods", "Pinewoods"), "2": ("bearsden", "Bears Den"), "3":
 
 
 def ask_optional(prompt):
-    s = input(prompt).strip()
-    return s if s else None
+    while True:
+        s = input(prompt).strip()
+        if "," in s:
+            print("  No commas allowed - a comma anywhere in the CSV breaks the QuickBooks import. "
+                 "Reword it without one.")
+            continue
+        return s if s else None
+
+
+def ask_required(prompt):
+    while True:
+        s = input(prompt).strip()
+        if not s:
+            print("  This can't be blank. Try again.")
+            continue
+        if "," in s:
+            print("  No commas allowed - a comma anywhere in the CSV breaks the QuickBooks import. "
+                 "Reword it without one.")
+            continue
+        return s
 
 
 def main():
@@ -42,15 +60,10 @@ def main():
             print("Please type 1 or 2.")
 
     print()
-    label = input("Label exactly as it is printed on the report (e.g. '12- CATERING'): ").strip()
-    account = input("QBO account, spelled exactly like the Chart of Accounts (e.g. '3001 Revenue'): ").strip()
+    label = ask_required("Label exactly as it is printed on the report (e.g. '12- CATERING'): ")
+    account = ask_required("QBO account, spelled exactly like the Chart of Accounts (e.g. '3001 Revenue'): ")
     prefix = ask_optional("Description prefix for the CSV, blank for none (e.g. 'Catering'): ")
     cls = ask_optional("Class override, blank to use the outlet's default class: ")
-
-    if not label or not account:
-        print()
-        print("Label and account are required - nothing saved.")
-        return
 
     data = {}
     if EXTRA_FILE.exists():
@@ -59,6 +72,15 @@ def main():
         except json.JSONDecodeError:
             print(f"WARNING: {EXTRA_FILE.name} was not valid JSON - starting a fresh one.")
             data = {}
+
+    existing = data.get(outlet, {}).get(kind, {}).get(label)
+    if existing is not None:
+        print()
+        print(f"'{label}' on {outlet_name} is already mapped to '{existing[0]}'.")
+        answer = input("Type YES to overwrite it, anything else to cancel: ").strip()
+        if answer != "YES":
+            print("Cancelled - nothing changed.")
+            return
 
     data.setdefault(outlet, {}).setdefault(kind, {})[label] = [account, prefix, cls]
     EXTRA_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")

@@ -10,15 +10,18 @@ the report's `From Date`. The filename is never trusted.
 
 ## Setup (once)
 
+**Windows**: install [Python](https://www.python.org/downloads/) - on the first setup screen,
+tick "Add python.exe to PATH" before clicking Install. Then double-click **SETUP.bat** in this
+folder. It installs everything this needs, creates the `inbox`/`output` folders, and tells you
+plainly whether OCR (only needed for scanned PDFs) is ready or needs one more step. Safe to
+run again any time.
+
+**Mac/Linux**:
+
 ```bash
 sudo apt install poppler-utils          # pdftotext (Mac: brew install poppler)
-pip install -r requirements.txt         # pdfplumber fallback + pytest
+python3 setup.py                        # installs requirements.txt, creates inbox/output
 ```
-
-**Windows**: install [Python](https://www.python.org/downloads/) (check "Add python.exe to PATH"
-during setup), then from a Command Prompt in this folder run `pip install -r requirements.txt`.
-`pdftotext` isn't available on Windows by default - `pdfplumber` (in requirements.txt) covers
-that automatically, no separate install needed.
 
 ### If a report is a scanned/raster PDF (no text layer)
 
@@ -143,6 +146,11 @@ Filter `Type = Sales` to see where revenue comes from.
   is handled correctly; a report for an unknown outlet is refused.
 - **No silent overwrite.** A CSV that already exists is not regenerated unless you pass
   `--force` (delivered files get corrected in QBO, per the standing rule).
+- **A problem with one file never loses the rest of the batch.** RUN.bat isolates every
+  report: an unbalanced entry, an unrecognised category, or an unexpected error prints `STOP:`
+  and leaves that one file in `inbox`, and moves on to the next. The journal number is saved
+  after every successful entry, not just at the end, so a crash partway through never causes
+  a number to be reused or skipped on the next run.
 - `$0.00` lines are never written. Each card tender is its own line even though they
   share account 1007.
 
@@ -189,8 +197,13 @@ classes, prefixes, the unknown-tender / unbalanced / wrong-outlet stops, and the
 ## Files
 
 - `silverware_je.py` - the tool. Outlet profiles (account + class maps) are at the top.
+- `setup.py` / `SETUP.bat` - one-time (or run-anytime) setup: installs requirements, creates
+  `inbox`/`output`, reports whether OCR is ready.
 - `run_batch.py` / `RUN.bat` - drag-and-drop batch runner: processes everything in `inbox`,
-  auto-increments the journal number, moves finished PDFs into `output`.
+  auto-increments the journal number, moves finished reports into `output`. A problem with one
+  file (unbalanced, unrecognised, a crash) prints `STOP:` and leaves that file in `inbox` -
+  it does not stop the rest of the batch, and the journal number is saved after every entry
+  so nothing gets lost or reused if something goes wrong partway through.
 - `reset_journal_number.py` / `RESET JOURNAL NUMBER.bat` - clears the saved journal number.
 - `set_journal_number.py` / `SET JOURNAL NUMBER.bat` - sets the next journal number directly.
 - `add_account.py` / `ADD ACCOUNT.bat` - adds a new sales category or tender to

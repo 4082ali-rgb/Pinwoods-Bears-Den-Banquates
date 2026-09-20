@@ -10,8 +10,9 @@ run_batch.py  -  drag-and-drop batch runner for silverware_je.py
 Double-click RUN.bat (Windows) or run `python3 run_batch.py` directly.
 
 What it does, every run:
-  1. Reads every PDF in inbox/ (falls back to the main folder if inbox is empty -
-     still works if you drop PDFs the old way).
+  1. Reads every PDF (and .txt - a pre-extracted or OCR'd-elsewhere report) in
+     inbox/ (falls back to the main folder if inbox is empty - still works if
+     you drop reports the old way).
   2. For each one, reads the report's own Cost Center to tell Pinewoods, Bears Den
      and Banquets apart - never guesses from the filename.
   3. Sorts everything by the report's own date, then assigns journal numbers in
@@ -20,8 +21,14 @@ What it does, every run:
   4. Builds each entry with the exact same rules as silverware_je.py - unbalanced
      or unrecognised reports print STOP: and are left in inbox untouched; nothing
      is written and no journal number is used for them.
-  5. Writes each QBO CSV into output/, moves the matching PDF into output/ too,
-     and saves the next journal number for the next run.
+  5. Writes each QBO CSV into output/, moves the matching report into output/ too,
+     and saves the next journal number after every single entry - so if something
+     goes wrong partway through a big drop, everything already built keeps its
+     number and nothing gets reused or skipped on the next run.
+
+A problem with one file (a crash while parsing, a full output folder, anything
+unexpected) prints STOP: and moves on to the next file rather than losing the
+whole run - the file that failed is left in inbox for you to check.
 
 Nothing here changes the accounting rules, GL mappings, balance checks or CSV
 format - only where files live and how the journal number is tracked.
@@ -38,10 +45,10 @@ INBOX = ROOT / "inbox"
 OUTPUT = ROOT / "output"
 STATE_FILE = ROOT / "journal_state.json"
 
+JOURNAL_NO_RE = re.compile(r"JJ\d+")
 
-def find_pdfs():
-    """PDFs in inbox/, plus any .txt files (pre-extracted or OCR'd elsewhere - drop one in
-    when a scanned report has no OCR engine installed and silverware_je.py can't read it)."""
+
+def find_reports():
     INBOX.mkdir(exist_ok=True)
     OUTPUT.mkdir(exist_ok=True)
     reports = sorted(INBOX.glob("*.pdf")) + sorted(INBOX.glob("*.txt"))
@@ -54,14 +61,20 @@ def find_pdfs():
 def load_next_number():
     if STATE_FILE.exists():
         try:
-            return json.loads(STATE_FILE.read_text(encoding="utf-8"))["next"]
-        except (json.JSONDecodeError, KeyError, OSError):
-            pass
+            saved = json.loads(STATE_FILE.read_text(encoding="utf-8"))["next"]
+        except (json.JSONDecodeError, KeyError, OSError) as e:
+            print(f"WARNING: could not read {STATE_FILE.name} ({e}) - asking for the number again.")
+            saved = None
+        if saved and JOURNAL_NO_RE.fullmatch(saved):
+            return saved
+        elif saved:
+            print(f"WARNING: {STATE_FILE.name} has an invalid saved number ('{saved}') - asking again.")
+
     print()
-    print("First run - what journal number should the NEXT entry use?")
+    print("What journal number should the NEXT entry use?")
     while True:
         raw = input("  Journal number (e.g. JJ3528): ").strip().upper()
-        if re.fullmatch(r"JJ\d+", raw):
+        if JOURNAL_NO_RE.fullmatch(raw):
             return raw
         print("  That doesn't look like a journal number (expected e.g. JJ3528). Try again.")
 
@@ -76,27 +89,45 @@ def save_next_number(jn: str):
     STATE_FILE.write_text(json.dumps({"next": jn}, indent=2), encoding="utf-8")
 
 
+def move_to_output(src: Path) -> Path:
+    """Move src into output/, adding a numeric suffix if that name is already there
+    (e.g. the same report dropped and processed twice) instead of crashing."""
+    dest = OUTPUT / src.name
+    if dest.exists():
+        n = 2
+        while (OUTPUT / f"{src.stem}_{n}{src.suffix}").exists():
+            n += 1
+        dest = OUTPUT / f"{src.stem}_{n}{src.suffix}"
+    src.rename(dest)
+    return dest
+
+
 def main():
-    pdfs = find_pdfs()
-    if not pdfs:
+    reports = find_reports()
+    if not reports:
         print("Nothing to do - drop today's PDFs into the 'inbox' folder and run again.")
         return
 
     # Parse every report first (without a journal number yet) so a drop with
     # several outlets/dates gets processed in date order, not folder order.
     parsed = []
-    for pdf in pdfs:
+    for report in reports:
         try:
-            text = sw.extract_text(pdf)
+            text = sw.extract_text(report)
             key, cc = sw.detect_profile(text, None)
             profile = sw.PROFILES[key]
             d = sw.parse_report(text, profile)
         except SystemExit as e:
-            print(f"STOP: {pdf.name}: {e}")
+            print(f"STOP: {report.name}: {e}")
             print("      Left in place - nothing written, no journal number used.")
             print()
             continue
-        parsed.append((d["date"], pdf, key, profile, d))
+        except Exception as e:
+            print(f"STOP: {report.name}: unexpected error while reading it - {type(e).__name__}: {e}")
+            print("      Left in place - nothing written, no journal number used.")
+            print()
+            continue
+        parsed.append((d["date"], report, key, profile, d))
 
     if not parsed:
         print("Nothing was built - see the STOP messages above.")
@@ -106,34 +137,47 @@ def main():
 
     journal_no = load_next_number()
     built = 0
-    for date, pdf, key, profile, d in parsed:
-        lines = sw.build_lines(d, profile, journal_no)
-        dr, cr = sw.totals(lines)
-        if abs(dr - cr) >= 0.005:
-            sw.print_summary(d, profile, lines, journal_no, None, True)
-            print(f"STOP: {pdf.name} does not balance (Dr {dr:.2f} vs Cr {cr:.2f}).")
+    for date, report, key, profile, d in parsed:
+        try:
+            lines = sw.build_lines(d, profile, journal_no)
+            dr, cr = sw.totals(lines)
+            if abs(dr - cr) >= 0.005:
+                sw.print_summary(d, profile, lines, journal_no, None, True)
+                print(f"STOP: {report.name} does not balance (Dr {dr:.2f} vs Cr {cr:.2f}).")
+                print("      Left in place - nothing written, this journal number was not used.")
+                print()
+                continue
+
+            out_path = OUTPUT / sw.out_filename(profile, journal_no, d)
+            if out_path.exists():
+                print(f"STOP: {out_path.name} already exists in output.")
+                print("      Not overwritten - move or rename it first if this is really a new entry.")
+                print()
+                continue
+
+            sw.write_csv(lines, out_path)
+        except Exception as e:
+            print(f"STOP: {report.name}: unexpected error while building the entry - "
+                 f"{type(e).__name__}: {e}")
             print("      Left in place - nothing written, this journal number was not used.")
             print()
             continue
 
-        out_path = OUTPUT / sw.out_filename(profile, journal_no, d)
-        if out_path.exists():
-            print(f"STOP: {out_path.name} already exists in output.")
-            print("      Not overwritten - move or rename it first if this is really a new entry.")
-            print()
-            continue
-
-        sw.write_csv(lines, out_path)
         sw.print_summary(d, profile, lines, journal_no, out_path, False)
-        pdf.rename(OUTPUT / pdf.name)
-        print(f"Moved {pdf.name} -> output/")
+        try:
+            moved_to = move_to_output(report)
+            print(f"Moved {report.name} -> output/{moved_to.name}")
+        except OSError as e:
+            print(f"NOTE: entry was written to {out_path.name}, but couldn't move {report.name} "
+                 f"into output/ ({e}). Move it there by hand so inbox stays clear.")
         print()
+
         journal_no = bump(journal_no)
+        save_next_number(journal_no)  # save after every entry, not just at the end
         built += 1
 
-    save_next_number(journal_no)
     print("=" * 70)
-    print(f"{built} of {len(pdfs)} PDF(s) built into CSVs in 'output'.")
+    print(f"{built} of {len(reports)} report(s) built into CSVs in 'output'.")
     print(f"Next journal number: {journal_no}")
 
 
